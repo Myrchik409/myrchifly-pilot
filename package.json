@@ -1,0 +1,55 @@
+{
+  "name": "myrchifly-pilot",
+  "version": "1.0.0",
+  "private": true,
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "description": "MyRcHiFlY Pilot — REPIX video and USB joystick flight console",
+  "main": "dist/main.js",
+  "scripts": {
+    "build:web": "vite build",
+    "build:main": "esbuild src/main/pilot-main.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/main.js && esbuild src/main/pilot-preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/pilot-preload.cjs",
+    "build": "npm run build:web && npm run build:main",
+    "typecheck": "tsc --noEmit",
+    "test": "esbuild tests/pilot-runtime.test.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/pilot-runtime.test.mjs && node --test dist/pilot-runtime.test.mjs",
+    "start": "npm run build && node scripts/ensure-binaries.mjs && electron dist/main.js",
+    "dist:win": "npm run build && node scripts/ensure-binaries.mjs && node scripts/fetch-gstreamer.mjs && electron-builder --win"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.3.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.7.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "electron": "42.11.18",
+    "electron-builder": "26.8.1",
+    "esbuild": "^0.27.3",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.12"
+  },
+  "build": {
+    "appId": "com.myrchifly.pilot",
+    "productName": "MyRcHiFlY Pilot",
+    "executableName": "MyRcHiFlY Pilot",
+    "electronVersion": "42.11.18",
+    "electronDist": "node_modules/electron/dist",
+    "asar": true,
+    "asarUnpack": ["**/node_modules/ffmpeg-static/**", "**/*.node"],
+    "directories": { "output": "release", "buildResources": "assets" },
+    "files": ["dist/**/*", "package.json"],
+    "extraResources": [{ "from": "web-dist", "to": "pilot-web", "filter": ["**/*"] }],
+    "win": {
+      "signAndEditExecutable": false,
+      "extraResources": [{ "from": "assets/gstreamer-runtime-1.26.11.msi", "to": "gstreamer-runtime.msi" }],
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "assets/myrchik.ico"
+    },
+    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "deleteAppDataOnUninstall": false },
+    "publish": null,
+    "npmRebuild": false
+  }
+}

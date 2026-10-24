@@ -1,0 +1,37 @@
+:root {
+  --accent: #ffa31a;
+  --border-accent: #c27d1a;
+  --border: #294a5c;
+  --bg-panel-raised: #102635;
+  --text: #e9f4f8;
+  --text-muted: #9ab7c6;
+  --success: #3de59b;
+  --danger: #ff5875;
+  --font-data: ui-monospace, Consolas, monospace;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+.joystick-panel { display:grid; gap:12px; min-width:0; }
+.joystick-panel p { margin:0; }
+.joystick-toolbar,.joystick-presets { display:flex; flex-wrap:wrap; gap:8px; align-items:end; }
+.joystick-toolbar label,.joystick-presets label { display:grid; gap:4px; min-width:190px; flex:1; font-size:12px; }
+.joystick-toolbar button,.joystick-presets button,.joystick-table button { min-height:36px; border:1px solid var(--border); border-radius:7px; background:var(--bg-panel-raised); color:var(--text); padding:6px 10px; cursor:pointer; }
+.joystick-toolbar button:disabled,.joystick-presets button:disabled,.joystick-table button:disabled { opacity:.45; cursor:default; }
+.joystick-toolbar .classic-control-primary { background:var(--accent); color:#141414; border-color:var(--border-accent); }
+.joystick-toolbar .joystick-stop { border-color:var(--danger); color:var(--danger); }
+.joystick-panel select,.joystick-panel input:not([type='checkbox']) { width:100%; border:1px solid var(--border); border-radius:7px; background:var(--bg-panel-raised); color:var(--text); padding:9px; }
+.joystick-panel input[type='checkbox'] { width:18px; height:18px; accent-color:var(--accent); }
+.classic-control-live { color:var(--success); }
+.classic-control-error { color:var(--danger); }
+.joystick-hint { color:var(--text-muted); font-size:12px; }
+.joystick-table-wrap { overflow:auto; max-height:52vh; border:1px solid var(--border); border-radius:9px; }
+.joystick-table { width:100%; border-collapse:collapse; white-space:nowrap; }
+.joystick-table th,.joystick-table td { padding:6px 9px; border-bottom:1px solid var(--border); text-align:left; }
+.joystick-table thead { position:sticky; top:0; z-index:1; background:var(--bg-panel-raised); }
+.joystick-table tbody tr:nth-child(even) { background:rgba(128,128,128,.045); }
+.joystick-table select { min-width:150px; }
+.joystick-table input[type='number'] { width:68px; }
+.joystick-table output { font-family:var(--font-data); color:var(--accent); }
+.joystick-live-output { display:flex; align-items:center; gap:8px; min-width:125px; }
+.joystick-live-output__track { display:block; width:72px; height:9px; overflow:hidden; border:1px solid var(--border); border-radius:5px; background:var(--bg-panel-raised); }
+.joystick-live-output__track>span { display:block; height:100%; background:var(--accent); transition:width .08s linear; }
+.joystick-table .is-detecting { border-color:var(--accent); color:var(--accent); }
