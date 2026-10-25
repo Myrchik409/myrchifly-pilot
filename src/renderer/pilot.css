@@ -94,3 +94,12 @@ button, input, select { font: inherit; }
 .pilot-controller .joystick-hint { color: #95afbd; }
 .pilot-error { margin: 0 0 12px; color: #ff627a; }
 @media (max-width: 1020px) { .pilot-connection { flex-wrap: wrap; } .pilot-telemetry { margin-left: 0; } .pilot-live-channels { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.pilot-radio-model { padding: 12px 14px; border: 1px solid #294a5b; border-radius: 10px; background: #0b1d29; }
+.pilot-radio-model-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.pilot-radio-model-title strong { color: #f6ad40; font-size: 15px; }
+.pilot-radio-model-title small { display: block; color: #96b4c4; margin-top: 4px; }
+.pilot-radio-model button { border: 1px solid #a66e22; background: #49351a; color: #ffbb55; padding: 10px 14px; border-radius: 8px; cursor: pointer; font: inherit; }
+.pilot-radio-model button:disabled { opacity: .6; cursor: wait; }
+.pilot-radio-model summary { color: #8bc4dc; cursor: pointer; margin-top: 10px; font-size: 13px; }
+.pilot-radio-model p, .pilot-radio-model ol { color: #aec3ce; font-size: 13px; line-height: 1.6; margin-bottom: 0; }

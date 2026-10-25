@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { RadioModelDownload } from './RadioModelDownload'
 import { defaultJoystickProfile, detectGamepadSource, gamepadRcChannels, gamepadRcReady, gamepadSourceLabel, parseJoystickProfile, type GamepadInput, type GamepadSource, type JoystickProfile, type RcChannelMapping, type RcEndpoint } from './gamepad-control'
 import { JOYSTICK_MONITOR_CHANNEL } from './joystick-monitor'
 import type { RcMap } from './pilot-runtime'
@@ -184,6 +185,7 @@ export function JoystickPanel({ connected, controllerChannels, controllerEndpoin
   const sources: GamepadSource[] = pad
     ? ['none', ...pad.axes.map((_, index) => `axis:${index}` as const), ...pad.buttons.map((_, index) => `button:${index}` as const)] : ['none']
   return <div className="joystick-panel">
+    <RadioModelDownload />
     <div className="joystick-toolbar">
       <label>Пульт <select value={selected ?? ''} onChange={event => { setEnabled(false); setSelected(Number(event.target.value)) }}>
         {!available.length && <option value="">Пульт не знайдено</option>}

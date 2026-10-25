@@ -1,5 +1,6 @@
 export interface PilotBridge {
   platform: 'electron'
+  radioModel: { save(): Promise<boolean> }
   fullscreen: {
     set(enabled: boolean): Promise<boolean>
     onChanged(listener: (enabled: boolean) => void): () => void

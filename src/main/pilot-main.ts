@@ -1,6 +1,8 @@
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
+import { saveRetrikArchive } from './radio-model.js'
+import { RETRIK_MODEL } from '../shared/radio-model.js'
 import { createDesktopWebPreferences } from './electron-window-options.js'
 import { NativeSocketManager, type SocketOpenOptions } from './native-socket-manager.js'
 import { RtspPreviewSession } from './rtsp-preview.js'
@@ -49,7 +51,21 @@ if (singleInstance) void app.whenReady().then(async () => {
   })
   const valid = (event: Electron.IpcMainInvokeEvent) => event.sender === mainWindow?.webContents && event.senderFrame === event.sender.mainFrame
 
-  ipcMain.handle('desktop:video-fullscreen:set', (event, enabled: unknown) => {
+  ipcMain.handle('desktop:radio-model:save', async event => {
+    if (!valid(event) || !mainWindow) throw new Error('Невірний запит збереження моделі.')
+    const owner = mainWindow
+    return saveRetrikArchive(webDistDir, async () => {
+      const result = await dialog.showSaveDialog(owner, {
+        title: 'Зберегти модель RETRIK для пульта',
+        defaultPath: join(app.getPath('downloads'), RETRIK_MODEL.fileName),
+        filters: [{ name: 'Пакет моделі EdgeTX', extensions: ['zip'] }],
+        properties: ['showOverwriteConfirmation']
+      })
+      return result.canceled ? undefined : result.filePath
+    })
+  })
+
+  ipcMain.handle('desktop:video-fullscreen:set' , (event, enabled: unknown) => {
     if (!valid(event) || typeof enabled !== 'boolean' || !mainWindow) throw new Error('Невірна команда повного екрана.')
     mainWindow.setFullScreen(enabled)
     return mainWindow.isFullScreen()

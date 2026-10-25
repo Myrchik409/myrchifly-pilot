@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('arduconfigDesktop', {
   platform: 'electron' as const,
+  radioModel: { save: () => ipcRenderer.invoke('desktop:radio-model:save') as Promise<boolean> },
   fullscreen: {
     set: (enabled: boolean) => ipcRenderer.invoke('desktop:video-fullscreen:set', enabled) as Promise<boolean>,
     onChanged: (listener: (enabled: boolean) => void) => {
