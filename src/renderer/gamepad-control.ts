@@ -15,6 +15,17 @@ export function gamepadManualAxes(axes: readonly number[]): ManualAxes | undefin
 }
 
 export type GamepadSource = `axis:${number}` | `button:${number}` | 'none'
+const directInputAxisNames = ['X', 'Y', 'Z', 'Rx', 'Ry', 'Rz', 'Slider1', 'Slider2'] as const
+const standardAxisNames = ['Лівий стік X', 'Лівий стік Y', 'Правий стік X', 'Правий стік Y'] as const
+
+export function gamepadSourceLabel(source: GamepadSource, mapping: string): string {
+  if (source === 'none') return 'Не призначено'
+  const [kind, rawIndex] = source.split(':')
+  const index = Number(rawIndex)
+  if (kind === 'button') return `Кнопка ${index + 1}`
+  const name = mapping === 'standard' ? standardAxisNames[index] : directInputAxisNames[index]
+  return name ? `${name} · вісь ${index + 1}` : `Вісь ${index + 1}`
+}
 export interface RcChannelMapping {
   source: GamepadSource
   reverse: boolean
@@ -25,13 +36,14 @@ export interface RcChannelMapping {
 }
 export interface JoystickProfile { version: 1; channels: RcChannelMapping[] }
 export interface GamepadInput { axes: readonly number[]; buttons: readonly { value: number; pressed: boolean }[] }
+export interface RcEndpoint { min: number; max: number; trim: number }
 
 export function defaultJoystickProfile(): JoystickProfile {
   return {
     version: 1,
     channels: Array.from({ length: 16 }, (_, index) => ({
-      source: (['axis:2', 'axis:3', 'axis:1', 'axis:0'][index] ?? 'none') as GamepadSource,
-      reverse: index === 1 || index === 2,
+      source: (index < 4 ? `axis:${index}` : 'none') as GamepadSource,
+      reverse: false,
       expo: 0, min: 1000, max: 2000, trim: 1500
     }))
   }
@@ -55,8 +67,8 @@ export function parseJoystickProfile(value: unknown): JoystickProfile {
 }
 
 /** Unmapped channels remain null and are ignored by RC_CHANNELS_OVERRIDE. */
-export function gamepadRcChannels(input: GamepadInput, profile: JoystickProfile): (number | null)[] {
-  return profile.channels.map((mapping) => {
+export function gamepadRcChannels(input: GamepadInput, profile: JoystickProfile, controllerEndpoints?: readonly (RcEndpoint | null)[], throttleChannel = 3): (number | null)[] {
+  return profile.channels.map((mapping, channelIndex) => {
     if (mapping.source === 'none') return null
     const [kind, rawIndex] = mapping.source.split(':')
     const index = Number(rawIndex)
@@ -71,19 +83,26 @@ export function gamepadRcChannels(input: GamepadInput, profile: JoystickProfile)
       normalized = bounded(button.value) * 2 - 1
     }
     if (mapping.reverse) normalized = -normalized
-    const strength = mapping.expo / 100
-    normalized = normalized * (1 - strength) + normalized ** 3 * strength
-    const pwm = normalized < 0
-      ? mapping.trim + normalized * (mapping.trim - mapping.min)
-      : mapping.trim + normalized * (mapping.max - mapping.trim)
-    return Math.round(Math.max(mapping.min, Math.min(mapping.max, pwm)))
+    const limits = controllerEndpoints?.[channelIndex] ?? mapping
+    // Mission Planner's JoystickBase.pickchannel/Expo uses a triangular PWM
+    // correction, rather than the usual cubic expo curve. Its throttle trim is
+    // always the midpoint even when RC3_TRIM equals RC3_MIN on the vehicle.
+    const trim = channelIndex + 1 === throttleChannel ? (limits.min + limits.max) / 2 : limits.trim
+    const working = normalized * 500
+    const linear = working < 0
+      ? limits.min + (working + 500) * (trim - limits.min) / 500
+      : trim + working * (limits.max - trim) / 500
+    const factor = working < -250 ? -500 - working : working > 250 ? 500 - working : working
+    const pwm = linear - factor * mapping.expo / 100
+    return Math.round(Math.max(limits.min, Math.min(limits.max, pwm)))
   })
 }
 
-export function gamepadRcReady(channels: readonly (number | null)[]): boolean {
+export function gamepadRcReady(channels: readonly (number | null)[], requiredChannels: readonly number[] = [1, 2, 3, 4]): boolean {
   // The operator explicitly turns RC override on. Stick positions must not
   // silently veto that action; only missing primary channel mappings do.
-  return channels.length === 16 && channels.slice(0, 4).every(value => value !== null)
+  return channels.length === 16 && requiredChannels.every(channel =>
+    Number.isInteger(channel) && channel >= 1 && channel <= 16 && channels[channel - 1] !== null)
 }
 
 export function detectGamepadSource(before: GamepadInput, after: GamepadInput): GamepadSource | undefined {

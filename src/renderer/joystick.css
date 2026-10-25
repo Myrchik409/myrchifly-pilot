@@ -34,5 +34,6 @@
 .joystick-table output { font-family:var(--font-data); color:var(--accent); }
 .joystick-live-output { display:flex; align-items:center; gap:8px; min-width:125px; }
 .joystick-live-output__track { display:block; width:72px; height:9px; overflow:hidden; border:1px solid var(--border); border-radius:5px; background:var(--bg-panel-raised); }
-.joystick-live-output__track>span { display:block; height:100%; background:var(--accent); transition:width .08s linear; }
+.joystick-live-output__track>span { display:block; height:100%; background:#35d77f; transition:width .08s linear; }
+.joystick-table .joystick-drone-output { color:#6ae5a1; font-weight:700; }
 .joystick-table .is-detecting { border-color:var(--accent); color:var(--accent); }

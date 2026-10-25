@@ -1,6 +1,6 @@
 {
   "name": "myrchifly-pilot",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "private": true,
   "license": "GPL-3.0-only",
   "type": "module",
@@ -11,7 +11,7 @@
     "build:main": "esbuild src/main/pilot-main.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/main.js && esbuild src/main/pilot-preload.ts --bundle --platform=node --format=cjs --external:electron --outfile=dist/pilot-preload.cjs",
     "build": "npm run build:web && npm run build:main",
     "typecheck": "tsc --noEmit",
-    "test": "esbuild tests/pilot-runtime.test.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/pilot-runtime.test.mjs && esbuild tests/pilot-updates.test.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/pilot-updates.test.mjs && node --test dist/pilot-runtime.test.mjs dist/pilot-updates.test.mjs",
+    "test": "esbuild tests/pilot-runtime.test.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/pilot-runtime.test.mjs && esbuild tests/pilot-updates.test.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/pilot-updates.test.mjs && esbuild tests/gamepad-control.test.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/gamepad-control.test.mjs && node --test dist/pilot-runtime.test.mjs dist/pilot-updates.test.mjs dist/gamepad-control.test.mjs",
     "start": "npm run build && node scripts/ensure-binaries.mjs && electron dist/main.js",
     "dist:win": "npm run build && node scripts/ensure-binaries.mjs && node scripts/fetch-gstreamer.mjs && electron-builder --win"
   },

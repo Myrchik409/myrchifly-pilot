@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { defaultJoystickProfile, detectGamepadSource, gamepadRcChannels, gamepadRcReady, parseJoystickProfile, type GamepadInput, type GamepadSource, type JoystickProfile, type RcChannelMapping } from './gamepad-control'
+import { defaultJoystickProfile, detectGamepadSource, gamepadRcChannels, gamepadRcReady, gamepadSourceLabel, parseJoystickProfile, type GamepadInput, type GamepadSource, type JoystickProfile, type RcChannelMapping, type RcEndpoint } from './gamepad-control'
 import { JOYSTICK_MONITOR_CHANNEL } from './joystick-monitor'
+import type { RcMap } from './pilot-runtime'
 
 const storageKey = 'myrchifly.joystick.profile.v1'
 const presetsKey = 'myrchifly.joystick.presets.v1'
@@ -21,8 +22,11 @@ const readProfile = (): JoystickProfile => {
 const pads = (): Gamepad[] => typeof navigator.getGamepads === 'function'
   ? Array.from(navigator.getGamepads()).filter((pad): pad is Gamepad => !!pad?.connected) : []
 
-export function JoystickPanel({ connected, onSend, onRelease, onPopout, onActiveChange, compact = false }: {
+export function JoystickPanel({ connected, controllerChannels, controllerEndpoints, controllerMap, onSend, onRelease, onPopout, onActiveChange, compact = false }: {
   connected: boolean
+  controllerChannels?: readonly (number | null)[]
+  controllerEndpoints?: readonly (RcEndpoint | null)[]
+  controllerMap?: RcMap
   onSend: (channels: (number | null)[]) => Promise<void>
   onRelease: () => Promise<void>
   onPopout?: () => void
@@ -44,6 +48,12 @@ export function JoystickPanel({ connected, onSend, onRelease, onPopout, onActive
   const sending = useRef(false)
   const fileInput = useRef<HTMLInputElement>(null)
   const monitor = useRef<BroadcastChannel | null>(null)
+  const map = controllerMap ?? { roll: 1, pitch: 2, throttle: 3, yaw: 4 }
+  const requiredChannels = [map.roll, map.pitch, map.throttle, map.yaw]
+  const channelNames = new Map<number, string>([
+    [map.roll, primaryChannelLabels[0]], [map.pitch, primaryChannelLabels[1]],
+    [map.throttle, primaryChannelLabels[2]], [map.yaw, primaryChannelLabels[3]]
+  ])
 
   useEffect(() => {
     if (typeof BroadcastChannel !== 'function') return
@@ -87,12 +97,11 @@ export function JoystickPanel({ connected, onSend, onRelease, onPopout, onActive
       if (detecting !== null && detectBefore.current) {
         const source = detectGamepadSource(detectBefore.current, pad)
         if (source) { change(detecting, { source }); setDetecting(null); detectBefore.current = undefined }
-        else detectBefore.current = { axes: [...pad.axes], buttons: pad.buttons.map(button => ({ value: button.value, pressed: button.pressed })) }
       }
-      const next = gamepadRcChannels(pad, profile)
+      const next = gamepadRcChannels(pad, profile, controllerEndpoints, map.throttle)
       setChannels(next)
       monitor.current?.postMessage({ type: 'sample', connected: true, enabled, deviceId: pad.id, channels: next })
-      if (enabled && next.slice(0, 4).some(value => value === null)) {
+      if (enabled && !gamepadRcReady(next, requiredChannels)) {
         setEnabled(false)
         setError('Основна вісь пульта зникла. Канали звільнено.')
       } else if (enabled && !connected) {
@@ -109,7 +118,7 @@ export function JoystickPanel({ connected, onSend, onRelease, onPopout, onActive
     poll()
     const timer = window.setInterval(poll, 100)
     return () => window.clearInterval(timer)
-  }, [selected, profile, enabled, connected, detecting, onSend])
+  }, [selected, profile, enabled, connected, detecting, onSend, controllerEndpoints, controllerMap])
 
   function change(index: number, update: Partial<RcChannelMapping>) {
     setEnabled(false)
@@ -118,7 +127,7 @@ export function JoystickPanel({ connected, onSend, onRelease, onPopout, onActive
   function enable() {
     if (enabled) { setEnabled(false); return }
     if (!connected) { setError('Під’єднай ArduPilot.'); return }
-    if (!gamepadRcReady(channels)) { setError('Признач основні канали RC1–RC4 у профілі пульта.'); return }
+    if (!gamepadRcReady(channels, requiredChannels)) { setError('Признач чотири основні канали ArduPilot у профілі пульта.'); return }
     setError(''); setEnabled(true)
   }
   async function importProfile(file?: File) {
@@ -179,7 +188,7 @@ export function JoystickPanel({ connected, onSend, onRelease, onPopout, onActive
     <p className={enabled ? 'classic-control-live' : ''}>{enabled ? 'Передача RC1–RC16 · 10 Гц' : 'Передача вимкнена. Признач канали й натисни «Увімкнути пульт».'}</p>
     {error && <p className="classic-control-error" role="alert">{error}</p>}
     {compact && <div className="pilot-live-channels" aria-label="Живі канали пульта">
-      {[0, 1, 2, 3, 5, 9].map(index => <div key={index}><span>RC{index + 1}{index < 4 && <small>{primaryChannelLabels[index]}</small>}</span><strong>{channels[index] ?? '—'}</strong></div>)}
+      {[...new Set([...requiredChannels.map(channel => channel - 1), 5, 9])].map(index => <div key={index}><span>RC{index + 1}{channelNames.has(index + 1) && <small>{channelNames.get(index + 1)}</small>}</span><strong>{channels[index] ?? '—'}</strong></div>)}
     </div>}
     {compact && <button type="button" className="joystick-advanced-toggle" onClick={() => setAdvancedOpen(value => !value)} aria-expanded={advancedOpen}>{advancedOpen ? 'Сховати призначення кнопок і каналів' : 'Призначити кнопки й канали'}</button>}
     <div className="joystick-advanced-content" hidden={!advancedOpen}>
@@ -193,14 +202,14 @@ export function JoystickPanel({ connected, onSend, onRelease, onPopout, onActive
       <button type="button" onClick={savePreset}>Зберегти профіль</button>
       <button type="button" onClick={deletePreset} disabled={!presetId}>Видалити</button>
     </div>
-    <p className="joystick-hint">RC1 крен · RC2 тангаж · RC3 газ · RC4 рискання. Решта каналів за замовчуванням вільні. Параметри профілю зберігаються на цьому комп’ютері.</p>
+    <p className="joystick-hint">Крен RC{map.roll} · тангаж RC{map.pitch} · газ RC{map.throttle} · рискання RC{map.yaw}. Осі й реверс налаштовуються в рядках нижче; значення «Дрон» надходять із телеметрії контролера.</p>
     <div className="joystick-table-wrap"><table className="joystick-table"><thead><tr>
-      <th>Канал</th><th>Вісь / кнопка</th><th>Автовизначення</th><th>Вихід</th><th>Експо</th><th>Реверс</th>
+      <th>Канал</th><th>Вісь / кнопка</th><th>Автовизначення</th><th>Пульт</th><th>Дрон</th><th>Експо</th><th>Реверс</th>
     </tr></thead><tbody>{profile.channels.map((mapping, index) => <tr key={index}>
-      <th className="joystick-channel-name">RC{index + 1}{index < 4 && <small>{primaryChannelLabels[index]}</small>}</th>
+      <th className="joystick-channel-name">RC{index + 1}{channelNames.has(index + 1) && <small>{channelNames.get(index + 1)}</small>}</th>
       <td><select aria-label={`Джерело RC${index + 1}`} value={mapping.source} onChange={event => change(index, { source: event.target.value as GamepadSource })}>
-        {!sources.includes(mapping.source) && <option value={mapping.source}>{mapping.source} · відсутнє</option>}
-        {sources.map(source => <option key={source} value={source}>{source === 'none' ? 'Не призначено' : source.startsWith('axis:') ? `Вісь ${Number(source.slice(5)) + 1}` : `Кнопка ${Number(source.slice(7)) + 1}`}</option>)}
+        {!sources.includes(mapping.source) && <option value={mapping.source}>{gamepadSourceLabel(mapping.source, pad?.mapping ?? '')} · відсутнє</option>}
+        {sources.map(source => <option key={source} value={source}>{gamepadSourceLabel(source, pad?.mapping ?? '')}</option>)}
       </select></td>
       <td><button type="button" className={detecting === index ? 'is-detecting' : ''} disabled={!pad} onClick={() => {
         if (!pad) return
@@ -210,6 +219,7 @@ export function JoystickPanel({ connected, onSend, onRelease, onPopout, onActive
         <span className="joystick-live-output__track"><span style={{ width: `${channels[index] === null ? 0 : Math.max(0, Math.min(100, ((channels[index] ?? 900) - 900) / 12))}%` }} /></span>
         <span>{channels[index] ?? '—'}</span>
       </output></td>
+      <td><output className="joystick-drone-output" aria-label={`RC${index + 1} з дрона`}>{controllerChannels?.[index] ?? '—'}</output></td>
       <td><input aria-label={`Експо RC${index + 1}`} type="number" min="-100" max="100" value={mapping.expo} onChange={event => change(index, { expo: Math.max(-100, Math.min(100, Number(event.target.value) || 0)) })} /></td>
       <td><input aria-label={`Реверс RC${index + 1}`} type="checkbox" checked={mapping.reverse} onChange={event => change(index, { reverse: event.target.checked })} /></td>
     </tr>)}</tbody></table></div>

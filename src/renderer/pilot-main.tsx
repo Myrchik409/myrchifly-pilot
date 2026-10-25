@@ -235,7 +235,7 @@ function PilotApp() {
             </div>}
         </div>
       </div>
-      <section className="pilot-controller"><h2>Пульт · кнопки та канали</h2><JoystickPanel compact connected={live} onSend={send} onRelease={release} onActiveChange={setJoystickActive} /></section>
+      <section className="pilot-controller"><h2>Пульт · кнопки та канали</h2><JoystickPanel compact connected={live} controllerChannels={snapshot.rcInput?.channels} controllerEndpoints={snapshot.rcEndpoints} controllerMap={snapshot.rcMap} onSend={send} onRelease={release} onActiveChange={setJoystickActive} /></section>
     </section>
   </main>
 }

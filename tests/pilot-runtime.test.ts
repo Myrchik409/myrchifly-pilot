@@ -32,6 +32,23 @@ test('Pilot sends mapped RC values and releases them when disconnected', async (
     })
     frameListener?.(heartbeat)
     assert.equal(runtime.getSnapshot().vehicle?.flightMode, 'PosHold')
+    const boardParameters: Record<string, number> = {
+      RC1_MIN: 988, RC1_MAX: 2011, RC1_TRIM: 1500,
+      RC2_MIN: 988, RC2_MAX: 2011, RC2_TRIM: 1500,
+      RCMAP_ROLL: 1, RCMAP_PITCH: 2, RCMAP_THROTTLE: 3, RCMAP_YAW: 4
+    }
+    Object.entries(boardParameters).forEach(([paramId, paramValue], index) => frameListener?.(codec.encode({
+      header: { systemId: 1, componentId: 1, sequence: index + 1 }, timestampMs: Date.now(),
+      message: { type: 'PARAM_VALUE', paramId, paramValue, paramType: 9, paramCount: 1000, paramIndex: index }
+    })))
+    assert.deepEqual(runtime.getSnapshot().rcMap, { roll: 1, pitch: 2, throttle: 3, yaw: 4 })
+    assert.deepEqual(runtime.getSnapshot().rcEndpoints?.[0], { min: 988, max: 2011, trim: 1500 })
+    frameListener?.(codec.encode({
+      header: { systemId: 1, componentId: 1, sequence: 20 }, timestampMs: Date.now(),
+      message: { type: 'RC_CHANNELS', timeBootMs: 1000, channelCount: 4,
+        channels: [1800, 1200, 988, 1500, ...Array(14).fill(0)], rssi: 100 }
+    }))
+    assert.deepEqual(runtime.getSnapshot().rcInput?.channels.slice(0, 5), [1800, 1200, 988, 1500, null])
     const channels = Array<number | null>(16).fill(null)
     channels[0] = 1500
     channels[5] = 1000
