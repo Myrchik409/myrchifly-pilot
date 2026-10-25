@@ -2,5 +2,8 @@ node_modules/
 dist/
 web-dist/
 release/
-assets/gstreamer-runtime-*.msi
+release-next/
+release-final/
+test-user-data/
+build/gstreamer-runtime-*.msi
 *.log

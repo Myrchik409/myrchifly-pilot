@@ -4,6 +4,7 @@ import { JOYSTICK_MONITOR_CHANNEL } from './joystick-monitor'
 
 const storageKey = 'myrchifly.joystick.profile.v1'
 const presetsKey = 'myrchifly.joystick.presets.v1'
+const primaryChannelLabels = ['Крен · Roll', 'Тангаж · Pitch', 'Газ · Throttle', 'Рискання · Yaw'] as const
 interface JoystickPreset { id: string; name: string; profile: JoystickProfile }
 const readPresets = (): JoystickPreset[] => {
   try {
@@ -178,7 +179,7 @@ export function JoystickPanel({ connected, onSend, onRelease, onPopout, onActive
     <p className={enabled ? 'classic-control-live' : ''}>{enabled ? 'Передача RC1–RC16 · 10 Гц' : 'Передача вимкнена. Признач канали й натисни «Увімкнути пульт».'}</p>
     {error && <p className="classic-control-error" role="alert">{error}</p>}
     {compact && <div className="pilot-live-channels" aria-label="Живі канали пульта">
-      {[0, 1, 2, 3, 5, 9].map(index => <div key={index}><span>RC{index + 1}</span><strong>{channels[index] ?? '—'}</strong></div>)}
+      {[0, 1, 2, 3, 5, 9].map(index => <div key={index}><span>RC{index + 1}{index < 4 && <small>{primaryChannelLabels[index]}</small>}</span><strong>{channels[index] ?? '—'}</strong></div>)}
     </div>}
     {compact && <button type="button" className="joystick-advanced-toggle" onClick={() => setAdvancedOpen(value => !value)} aria-expanded={advancedOpen}>{advancedOpen ? 'Сховати призначення кнопок і каналів' : 'Призначити кнопки й канали'}</button>}
     <div className="joystick-advanced-content" hidden={!advancedOpen}>
@@ -196,7 +197,7 @@ export function JoystickPanel({ connected, onSend, onRelease, onPopout, onActive
     <div className="joystick-table-wrap"><table className="joystick-table"><thead><tr>
       <th>Канал</th><th>Вісь / кнопка</th><th>Автовизначення</th><th>Вихід</th><th>Експо</th><th>Реверс</th>
     </tr></thead><tbody>{profile.channels.map((mapping, index) => <tr key={index}>
-      <th>{`RC${index + 1}`}</th>
+      <th className="joystick-channel-name">RC{index + 1}{index < 4 && <small>{primaryChannelLabels[index]}</small>}</th>
       <td><select aria-label={`Джерело RC${index + 1}`} value={mapping.source} onChange={event => change(index, { source: event.target.value as GamepadSource })}>
         {!sources.includes(mapping.source) && <option value={mapping.source}>{mapping.source} · відсутнє</option>}
         {sources.map(source => <option key={source} value={source}>{source === 'none' ? 'Не призначено' : source.startsWith('axis:') ? `Вісь ${Number(source.slice(5)) + 1}` : `Кнопка ${Number(source.slice(7)) + 1}`}</option>)}

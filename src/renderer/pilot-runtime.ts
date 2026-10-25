@@ -38,7 +38,7 @@ export class PilotRuntime {
   constructor(endpoint: string) {
     const bridge = getDesktopBridge()
     const target = parseEndpoint(endpoint)
-    if (!bridge?.socket || !target) throw new Error('Вкажи адресу REPIX у форматі IP:порт.')
+    if (!bridge?.socket || !target) throw new Error('Вкажи адресу MAVLink у форматі IP:порт.')
     this.transport = new DesktopSocketTransport('repix', { bridge: bridge.socket, ...target })
     this.session = new MavlinkSession(this.transport, new MavlinkV2Codec())
     this.session.onStatus(connection => {

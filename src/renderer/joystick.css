@@ -26,6 +26,7 @@
 .joystick-table-wrap { overflow:auto; max-height:52vh; border:1px solid var(--border); border-radius:9px; }
 .joystick-table { width:100%; border-collapse:collapse; white-space:nowrap; }
 .joystick-table th,.joystick-table td { padding:6px 9px; border-bottom:1px solid var(--border); text-align:left; }
+.joystick-channel-name small { display:block; margin-top:2px; color:#8eabb9; font:600 11px/1.25 system-ui,sans-serif; }
 .joystick-table thead { position:sticky; top:0; z-index:1; background:var(--bg-panel-raised); }
 .joystick-table tbody tr:nth-child(even) { background:rgba(128,128,128,.045); }
 .joystick-table select { min-width:150px; }

@@ -14,7 +14,7 @@ export class NativeSocketManager {
   async open(id: string, options: SocketOpenOptions, sink: SocketEventSink): Promise<void> {
     if (this.connections.has(id)) throw new Error('Цей канал уже відкритий.')
     if (options.kind !== 'udp' || !/^[a-zA-Z0-9_.-]+$/.test(options.remoteHost) ||
-      !Number.isInteger(options.remotePort) || options.remotePort < 1 || options.remotePort > 65535) throw new Error('Невірна адреса REPIX.')
+      !Number.isInteger(options.remotePort) || options.remotePort < 1 || options.remotePort > 65535) throw new Error('Невірна адреса MAVLink UDP.')
     const socket = createSocket('udp4')
     const connection: Connection = { socket, sink, remoteHost: options.remoteHost, remotePort: options.remotePort }
     this.connections.set(id, connection)
@@ -40,7 +40,7 @@ export class NativeSocketManager {
 
   async send(id: string, frame: Uint8Array): Promise<void> {
     const connection = this.connections.get(id)
-    if (!connection) throw new Error('З’єднання REPIX закрите.')
+    if (!connection) throw new Error('З’єднання MAVLink закрите.')
     if (frame.length > 4096) throw new Error('MAVLink-кадр завеликий.')
     await new Promise<void>((resolve, reject) => connection.socket.send(frame, connection.remotePort, connection.remoteHost, error => error ? reject(error) : resolve()))
   }

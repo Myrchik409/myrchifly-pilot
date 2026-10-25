@@ -7,7 +7,7 @@ import { once } from 'node:events'
 
 const expected = '31cbc21fa0950b5c1e79c80959b2799805cb05a7a35953a13a9f790776137605'
 const url = 'https://gstreamer.freedesktop.org/data/pkg/windows/1.26.11/msvc/gstreamer-1.0-msvc-x86_64-1.26.11.msi'
-const destination = fileURLToPath(new URL('../assets/gstreamer-runtime-1.26.11.msi', import.meta.url))
+const destination = fileURLToPath(new URL('../build/gstreamer-runtime-1.26.11.msi', import.meta.url))
 const temporary = `${destination}.download`
 async function sha256(path) {
   const { createReadStream } = await import('node:fs')

@@ -1,6 +1,16 @@
 export interface PilotBridge {
   platform: 'electron'
+  fullscreen: {
+    set(enabled: boolean): Promise<boolean>
+    onChanged(listener: (enabled: boolean) => void): () => void
+  }
   rtsp: { start(url: string): Promise<string>; stop(): Promise<void> }
+  updates: {
+    check(): Promise<{ currentVersion: string; latestVersion: string; available: boolean; releaseUrl: string; installerBytes?: number }>
+    download(): Promise<boolean>
+    apply(): Promise<boolean>
+    onProgress(listener: (percent: number) => void): () => void
+  }
   socket: {
     open(id: string, options: { kind: 'udp'; remoteHost: string; remotePort: number }): Promise<void>
     send(id: string, frame: Uint8Array): Promise<void>
