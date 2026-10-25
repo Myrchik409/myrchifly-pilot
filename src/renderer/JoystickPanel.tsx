@@ -44,7 +44,9 @@ export function JoystickPanel({ connected, controllerChannels, controllerEndpoin
   const [error, setError] = useState('')
   const [advancedOpen, setAdvancedOpen] = useState(true)
   const [detecting, setDetecting] = useState<number | null>(null)
+  const [detectionMessage, setDetectionMessage] = useState('')
   const detectBefore = useRef<GamepadInput | undefined>(undefined)
+  const detectStarted = useRef(0)
   const sending = useRef(false)
   const fileInput = useRef<HTMLInputElement>(null)
   const monitor = useRef<BroadcastChannel | null>(null)
@@ -96,7 +98,16 @@ export function JoystickPanel({ connected, controllerChannels, controllerEndpoin
       }
       if (detecting !== null && detectBefore.current) {
         const source = detectGamepadSource(detectBefore.current, pad)
-        if (source) { change(detecting, { source }); setDetecting(null); detectBefore.current = undefined }
+        if (source) {
+          change(detecting, { source })
+          setDetectionMessage(`RC${detecting + 1}: визначено ${gamepadSourceLabel(source, pad.mapping)}. Призначення збережено.`)
+          setDetecting(null)
+          detectBefore.current = undefined
+        } else if (Date.now() - detectStarted.current >= 8000) {
+          setDetectionMessage(`RC${detecting + 1}: пульт не передав зміну. Спробуй перевести тумблер в інше положення або вибери вісь чи кнопку зі списку.`)
+          setDetecting(null)
+          detectBefore.current = undefined
+        }
       }
       const next = gamepadRcChannels(pad, profile, controllerEndpoints, map.throttle)
       setChannels(next)
@@ -122,6 +133,7 @@ export function JoystickPanel({ connected, controllerChannels, controllerEndpoin
 
   function change(index: number, update: Partial<RcChannelMapping>) {
     setEnabled(false)
+    setDetectionMessage('')
     setProfile(previous => ({ ...previous, channels: previous.channels.map((item, at) => at === index ? { ...item, ...update } : item) }))
   }
   function enable() {
@@ -203,6 +215,9 @@ export function JoystickPanel({ connected, controllerChannels, controllerEndpoin
       <button type="button" onClick={deletePreset} disabled={!presetId}>Видалити</button>
     </div>
     <p className="joystick-hint">Крен RC{map.roll} · тангаж RC{map.pitch} · газ RC{map.throttle} · рискання RC{map.yaw}. Осі й реверс налаштовуються в рядках нижче; значення «Дрон» надходять із телеметрії контролера.</p>
+    <p className="joystick-hint" role="status">{detecting !== null
+      ? `Визначаю RC${detecting + 1}: перемкни потрібний тумблер або натисни кнопку протягом 8 секунд.`
+      : detectionMessage || (pad ? `Пульт передає ${pad.axes.length} осей і ${pad.buttons.length} кнопок.` : '')}</p>
     <div className="joystick-table-wrap"><table className="joystick-table"><thead><tr>
       <th>Канал</th><th>Вісь / кнопка</th><th>Автовизначення</th><th>Пульт</th><th>Дрон</th><th>Експо</th><th>Реверс</th>
     </tr></thead><tbody>{profile.channels.map((mapping, index) => <tr key={index}>
@@ -213,7 +228,7 @@ export function JoystickPanel({ connected, controllerChannels, controllerEndpoin
       </select></td>
       <td><button type="button" className={detecting === index ? 'is-detecting' : ''} disabled={!pad} onClick={() => {
         if (!pad) return
-        setEnabled(false); detectBefore.current = { axes: [...pad.axes], buttons: pad.buttons.map(button => ({ value: button.value, pressed: button.pressed })) }; setDetecting(index)
+        setEnabled(false); setDetectionMessage(''); detectBefore.current = { axes: [...pad.axes], buttons: pad.buttons.map(button => ({ value: button.value, pressed: button.pressed })) }; detectStarted.current = Date.now(); setDetecting(index)
       }}>{detecting === index ? 'Рухай…' : 'Визначити'}</button></td>
       <td><output className="joystick-live-output" data-testid={`joystick-live-rc${index + 1}`}>
         <span className="joystick-live-output__track"><span style={{ width: `${channels[index] === null ? 0 : Math.max(0, Math.min(100, ((channels[index] ?? 900) - 900) / 12))}%` }} /></span>

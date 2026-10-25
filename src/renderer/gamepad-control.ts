@@ -106,11 +106,19 @@ export function gamepadRcReady(channels: readonly (number | null)[], requiredCha
 }
 
 export function detectGamepadSource(before: GamepadInput, after: GamepadInput): GamepadSource | undefined {
-  const pressed = after.buttons.findIndex((button, index) => button.value > 0.7 &&
-    (before.buttons[index]?.value ?? 0) < 0.3)
-  if (pressed >= 0) return `button:${pressed}`
-  let strongest = 0.35
+  // Switches may start in the ON position, move to an intermediate analog
+  // value, or report a release rather than a new press. Detect any deliberate
+  // change instead of requiring a 0 -> 1 button edge.
+  let strongest = 0.2
   let found: GamepadSource | undefined
+  after.buttons.forEach((button, index) => {
+    const previous = before.buttons[index]?.value ?? 0
+    const delta = Math.abs(button.value - previous)
+    // When a switch releases one button and presses another together, choose
+    // the newly active position. A release alone remains detectable.
+    const score = delta + (button.value > previous ? 0.01 : 0)
+    if (delta > 0.2 && score > strongest) { strongest = score; found = `button:${index}` }
+  })
   after.axes.forEach((axis, index) => {
     const delta = Math.abs(axis - (before.axes[index] ?? 0))
     if (delta > strongest) { strongest = delta; found = `axis:${index}` }

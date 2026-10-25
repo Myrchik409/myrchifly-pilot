@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { defaultJoystickProfile, gamepadRcChannels, gamepadSourceLabel } from '../src/renderer/gamepad-control.js'
+import { defaultJoystickProfile, detectGamepadSource, gamepadRcChannels, gamepadSourceLabel } from '../src/renderer/gamepad-control.js'
 
 test('Ardu-style axis names keep the actual Gamepad source index', () => {
   assert.equal(gamepadSourceLabel('axis:0', ''), 'X · вісь 1')
@@ -32,4 +32,13 @@ test('Mission Planner expo uses a triangular correction, and reverse flips an ax
   assert.equal(reversed[0], 1500)
   profile.channels[0].expo = 0
   assert.equal(gamepadRcChannels({ axes: [0.5, 0, 0, 0], buttons: [] }, profile)[0], 1250)
+})
+
+test('autodetection recognizes three-position switches, analog buttons, and release', () => {
+  const before = { axes: [0, 0, 0, 0, -1], buttons: [{ value: 1, pressed: true }, { value: 0, pressed: false }] }
+  assert.equal(detectGamepadSource(before, { axes: [0, 0, 0, 0, 0], buttons: before.buttons }), 'axis:4')
+  assert.equal(detectGamepadSource(before, { axes: before.axes, buttons: [{ value: 0, pressed: false }, before.buttons[1]] }), 'button:0')
+  assert.equal(detectGamepadSource(before, { axes: before.axes, buttons: [before.buttons[0], { value: 0.5, pressed: false }] }), 'button:1')
+  assert.equal(detectGamepadSource(before, { axes: before.axes, buttons: [{ value: 0, pressed: false }, { value: 1, pressed: true }] }), 'button:1')
+  assert.equal(detectGamepadSource(before, { axes: [0.04, 0, 0, 0, -1], buttons: before.buttons }), undefined)
 })
